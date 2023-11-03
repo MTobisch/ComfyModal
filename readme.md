@@ -1,0 +1,1 @@
+A small, easy-to-use modal designed to be highly adjustable in terms of opening/closing animations and content.
