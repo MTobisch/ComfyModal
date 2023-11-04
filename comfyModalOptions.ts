@@ -3,7 +3,7 @@ import { shiftEnterAnimation, shiftLeaveAnimation } from "./animations/shiftAnim
 import { fadeEnterAnimation, fadeLeaveAnimation } from "./animations/fadeAnimation";
 import { delay } from "./animations/utils";
 
-export interface FlexModalOptions {
+export interface ComfyModalOptions {
   /**
    * An animation that will be applied to the modal as it enters the screen. This is simply a function that is given the modal element, applies animations with any custom logic and returns a promise that resolves when done.
    */
@@ -70,7 +70,7 @@ export interface FlexModalOptions {
   postLeaveAnimationCallback?: ((modal: HTMLElement, lockscreen: HTMLElement) => void)|null;
 }
 
-export const flexModalOptionDefaults: FlexModalOptions = {
+export const flexModalOptionDefaults: ComfyModalOptions = {
   modalEnterAnimation: shiftEnterAnimation(),
   modalLeaveAnimation: shiftLeaveAnimation(),
   lockscreenEnterAnimation: fadeEnterAnimation(),
@@ -86,7 +86,7 @@ export const flexModalOptionDefaults: FlexModalOptions = {
   postLeaveAnimationCallback: null
 }
 
-export function resolvePartialOptions(partialOptions): FlexModalOptions {
+export function resolvePartialOptions(partialOptions): ComfyModalOptions {
   const finalOptions = {};
 
   for (const [key, defaultValue] of Object.entries(flexModalOptionDefaults)) {

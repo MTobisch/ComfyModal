@@ -1,4 +1,4 @@
-import { FlexModalOptions, resolvePartialOptions } from "./flexModalOptions";
+import { ComfyModalOptions, resolvePartialOptions } from "./comfyModalOptions";
 
 interface ModalData {
   id?: number;
@@ -6,7 +6,7 @@ interface ModalData {
   lockscreenElement?: HTMLElement;
   lockscreenGridElement?: HTMLElement;
   modalElement?: HTMLElement;
-  options?: FlexModalOptions;
+  options?: ComfyModalOptions;
   modalClosedPromiseResolve?: (value: HTMLElement | PromiseLike<HTMLElement>) => void;
   scrollTop?: number;
   preventScrollHandler?: (event: Event) => any;
@@ -16,7 +16,7 @@ interface ModalData {
   isClosing?: boolean;
 }
 
-export class FlexModal {
+export class ComfyModal {
   modalCounter: number = 0;
   openedModals: {[key: number]: ModalData} = {};
 
@@ -30,7 +30,7 @@ export class FlexModal {
    * @param options - A FlexModalOptions object that can be used to customize the behaviour of the modal
    * @param container - What container the modal lockscreen should be appended into. Defaults to the body element.
    */
-  async open(createFunction: (closeHandler: () => void) => HTMLElement, options: FlexModalOptions = {}, container: HTMLElement = document.body) {
+  async open(createFunction: (closeHandler: () => void) => HTMLElement, options: ComfyModalOptions = {}, container: HTMLElement = document.body) {
     for (const openedModal of Object.values(this.openedModals)) {
       if (openedModal.container === container) {
         console.error('A modal for this container is already opened. Make sure to close it before opening another one.')
