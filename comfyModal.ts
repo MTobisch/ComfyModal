@@ -3,14 +3,13 @@ import { ComfyModalOptions, resolvePartialOptions } from "./comfyModalOptions";
 interface ModalData {
   id?: number;
   container?: HTMLElement;
+  scrollContainer?: HTMLElement;
+  scrollContainerPosition?: number;
   lockscreenElement?: HTMLElement;
   lockscreenGridElement?: HTMLElement;
   modalElement?: HTMLElement;
   options?: ComfyModalOptions;
   modalClosedPromiseResolve?: (value: HTMLElement | PromiseLike<HTMLElement>) => void;
-  scrollTop?: number;
-  preventScrollHandler?: (event: Event) => any;
-  scrollContainer?: HTMLElement;
   // Some state
   isOpened?: boolean;
   isClosing?: boolean;
@@ -19,8 +18,18 @@ interface ModalData {
 export class ComfyModal {
   modalCounter: number = 0;
   openedModals: {[key: number]: ModalData} = {};
+  boundScrollEventWheelListener: EventListener = this.scrollEventWheelListener.bind(this);
+  boundScrollEventTouchStartListener: EventListener = this.scrollEventTouchStartListener.bind(this);
+  boundScrollEventTouchMoveListener: EventListener = this.scrollEventTouchMoveListener.bind(this);
+  boundScrollEventKeyListener: EventListener = this.scrollEventKeyListener.bind(this);
+  // Scroll lock var
+  wheelEvent: any;
+  wheelEventOpts: any;
+  lastTouchCoords: {x: number, y: number} = null; 
 
   constructor() {
+    this.initWheelEventVars();
+    this.initRepositionListeners();
   }
 
   /**
@@ -39,11 +48,15 @@ export class ComfyModal {
     }
 
     const id = this.modalCounter++;
-    const modal: ModalData = {id: id, container: container, isOpened: false, isClosing: false};
+    const modal: ModalData = {
+      id: id, 
+      container: container, 
+      scrollContainer: (container === document.body ? window : container) as HTMLElement, // If container is body, scroll data can be found in window
+      options: resolvePartialOptions(options),
+      isOpened: false, 
+      isClosing: false
+    };
     this.openedModals[id] = modal;
-
-    // Assemble options
-    modal.options = resolvePartialOptions(options);
 
     // Create lockscreen
     this.createLockscreen(modal);
@@ -59,6 +72,7 @@ export class ComfyModal {
           max-height: 100%; 
           height: 100%;
           width: 100%;
+          box-sizing: border-box;
           padding-left: ${modal.options.paddingHorizontal}px; 
           padding-right: ${modal.options.paddingHorizontal}px;
           padding-top: ${modal.options.paddingVertical}px;
@@ -129,9 +143,6 @@ export class ComfyModal {
   private async closeModal(modal: ModalData) {
     modal.isClosing = true;
 
-    // Remove scroll lock immediately
-    modal.scrollContainer?.removeEventListener('scroll', modal.preventScrollHandler!);
-
     // Run animations of lockscreen and modal in parallel or sequential
     if (modal.options?.preLeaveAnimationCallback) { modal.options.preLeaveAnimationCallback(modal.modalElement!, modal.lockscreenElement!); }
     if (modal.options?.runLeaveAnimationsInParallel) {
@@ -160,21 +171,34 @@ export class ComfyModal {
   // Lockscreen management
   // ------------------------------------------------------
 
+  // Any time the global scroll position or the viewport changes, reposition lockscreen
+  initRepositionListeners() {
+    window.addEventListener('scroll', () => {
+      for (const modal of Object.values(this.openedModals)) {
+        this.repositionLockscreen(modal);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      for (const modal of Object.values(this.openedModals)) {
+        this.repositionLockscreen(modal);
+      }
+    });
+  }
+
   async createLockscreen(modal: ModalData) {
     // Create lockscreen (invisible at first)
     // This hides lockscreen scrollbar beneath container scrollbar, so no horizontal content shift
-    const scrollBarWidth = window.innerWidth - document.body.clientWidth;
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `<div 
         class='modal-lockscreen' 
+        tabindex="0"
         style='
-          position: fixed; 
+          position: absolute; 
           top: 0px; 
           left: 0px; 
           width: 100%; 
           height: 100%; 
-          box-sizing: content-box;
-          padding-right: ${scrollBarWidth}px;
           background-color: ${modal.options?.lockscreenColor};
           overflow-y: scroll;
           z-index: 1000;
@@ -195,6 +219,15 @@ export class ComfyModal {
     modal.lockscreenElement = wrapper.childNodes[0] as HTMLElement;
     modal.lockscreenGridElement = modal.lockscreenElement.querySelector('.modal-lockscreen-grid') as HTMLElement;
 
+    // Make sure container will contain absolutely positioned child
+    const computedStyles = getComputedStyle(modal.container);
+    if (computedStyles.position === 'static') {
+      modal.container.style.position = 'relative';
+    }
+
+    // Position lockscreen according to current container scroll position
+    this.repositionLockscreen(modal);
+
     // Append lockscreen
     modal.container?.append(modal.lockscreenElement);
 
@@ -206,32 +239,131 @@ export class ComfyModal {
       }
     });
 
-    // Prevent container scrolling
-    modal.preventScrollHandler = this.createPreventScrollHandler(modal);
-    modal.scrollContainer = (modal.container === document.body ? window : modal.container) as HTMLElement; // If container is body, have to listen to window scroll instead
-    modal.scrollTop = modal.container === document.body ? (modal.scrollContainer as any).scrollY : modal.scrollContainer.scrollTop; 
-    modal.scrollContainer.addEventListener('scroll', modal.preventScrollHandler);
+    // Lock scrolling in parent container
+    this.setBackgroundScrolling(modal, false);
+  }
+
+  repositionLockscreen(modal: ModalData) {
+    modal.scrollContainerPosition = modal.container === document.body ? (modal.scrollContainer as any).scrollY : modal.scrollContainer.scrollTop; 
+    modal.lockscreenElement.style.top = modal.scrollContainerPosition + 'px';
   }
 
   removeLockscreen(modal: ModalData) {
-    // Unlocking scroll again is also done in close(), but just to be sure
-    modal.scrollContainer?.removeEventListener('scroll', modal.preventScrollHandler!);
+    this.setBackgroundScrolling(modal, true);
     modal.container?.removeChild(modal.lockscreenElement!);
+    modal.lockscreenElement.remove();
   }
 
-  createPreventScrollHandler(modal: ModalData): (event: Event) => any {
-    return (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+  // Scroll locking
+  // ------------------------------------------------------
 
-      const scrollTop = modal.container === document.body ? (modal.scrollContainer as any).scrollY : modal.scrollContainer!.scrollTop; // If container is body, scrollContainer is window
-      if (scrollTop !== modal.scrollTop) {
-        // Prevent scrolling when lockscreen is active
-        modal.scrollContainer!.scrollTo(0, modal.scrollTop!);
+  initWheelEventVars() {
+    // Modern Chrome requires { passive: false } when adding event
+    this.wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
+    this.wheelEventOpts = false;
+    try {
+      window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
+        get: function () { this.wheelEventOpts = { passive: false } as EventListenerOptions; } 
+      }));
+    } catch(e) {}   
+  }
+
+  setBackgroundScrolling(modal: ModalData, state: boolean = false) {
+    if (!state) {
+      // Listen to any kind of interaction that would trigger a scroll
+      modal.lockscreenElement.addEventListener(this.wheelEvent, this.boundScrollEventWheelListener, this.wheelEventOpts);
+      modal.lockscreenElement.addEventListener('touchstart', this.boundScrollEventTouchStartListener, this.wheelEventOpts);
+      modal.lockscreenElement.addEventListener('touchmove', this.boundScrollEventTouchMoveListener, this.wheelEventOpts);
+      modal.lockscreenElement.addEventListener('keydown', this.boundScrollEventKeyListener, false);  
+    } else {
+      modal.lockscreenElement.removeEventListener(this.wheelEvent, this.boundScrollEventWheelListener, this.wheelEventOpts);
+      modal.lockscreenElement.removeEventListener('touchstart', this.boundScrollEventTouchStartListener, this.wheelEventOpts);
+      modal.lockscreenElement.removeEventListener('touchmove', this.boundScrollEventTouchMoveListener, this.wheelEventOpts);
+      modal.lockscreenElement.removeEventListener('keydown', this.boundScrollEventKeyListener, false);
+    }
+  }
+
+  scrollEventWheelListener(event) {
+    const direction = (event as any).deltaY < 0 ? 'up' : 'down';
+    this.preventEventIfBackgroundScroll(event, direction);
+  }
+
+  scrollEventTouchStartListener(event: TouchEvent) {
+    this.lastTouchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
+  }
+
+  scrollEventTouchMoveListener (event: TouchEvent) {
+    // Note: Have to track both TouchStart and TouchMove. Just comparing first to second TouchMove to determine scroll direction is
+    // insufficient as Chrome doesn't allow blocking touch scrolling ONCE IT HAS STARTED. To fix this, would have to block initial TouchMove event.
+    // However, that leads to problems with Firefox as scrolling will be disabled for all subsequent TouchMove events if you block the first one.
+    // The way it works for both is to simply take the first coords from TouchStart instead and compare them to the TouchMove coords.
+    // As TouchMove only triggers when having moved sufficiently far away from TouchStart coords, coords are guaranteed to be different
+    const touchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
+    let direction: 'up'|'down' = touchCoords.y > this.lastTouchCoords.y ? 'up' : 'down';
+    this.preventEventIfBackgroundScroll(event, direction);
+    this.lastTouchCoords = touchCoords;
+  }
+
+  scrollEventKeyListener(event) {
+    // .modal-lockscreen must have tabindex attr to be able to listen to keydown events
+    if (event.target.classList.contains('modal-lockscreen')) {
+      const upKeys = [
+        38, // up arrow
+        33  // pageup
+      ];
+      const downKeys = [
+        40,  // down arrow
+        32,  // spacebar
+        34   // pagedown
+      ];
+      const leftKeys = [
+        37, // Left arrow
+        36  // home
+      ];
+      const rightKeys = [
+        39, // right arrow
+        35  // end
+      ];
+      const allKeys = [...upKeys, ...downKeys, ...leftKeys, ...rightKeys];
+      
+      // Seems impossible to stop a keydown scroll once it really gets going, so just block any and all keydown scrolling
+      if (allKeys.includes(event.keyCode)) {
+        event.preventDefault();
       }
-
-      return false
-    };
+  
+      /*
+      let direction = null;
+      if (upKeys.includes(event.keyCode)) {
+        direction = 'up';
+      }
+      if (downKeys.includes(event.keyCode)) {
+        direction = 'down';
+      }
+      
+      if (direction) {
+        this.preventEventIfBackgroundScroll(event, direction);
+      }
+      */
+    }
   }
 
+  preventEventIfBackgroundScroll(event, direction: 'up'|'down') {
+    const lockscreenElement = event.target.closest('.modal-lockscreen');
+    const scrollTop = lockscreenElement.scrollTop;
+    const maxScrollTop = lockscreenElement.scrollHeight - lockscreenElement.clientHeight;
+    const safetyDistance = 5;
+
+    // By default, if there is nothing (further) to scroll in the modal, browsers will fall back to scrolling the next best thing in the DOM hierarchy, often window
+    // This is some logic to prevent that. If a modal is open, don't scroll anything in the background!
+    const scrollDisallowed = 
+      maxScrollTop === 0 ||                                                 // Always prevent scroll if nothing to scroll in modal
+      (direction === 'up' && scrollTop <= 0 + safetyDistance) ||            // Don't scroll further if modal is scrolled all the way to top
+      (direction === 'down' && scrollTop >= maxScrollTop - safetyDistance)  // Don't scroll further if modal is scrolled all the way to bottom
+    
+    //console.log(direction, scrollTop, maxScrollTop, scrollDisallowed ? 'block' : 'allow');
+    if (scrollDisallowed) {
+      event.preventDefault();
+    }
+  }
 }
+

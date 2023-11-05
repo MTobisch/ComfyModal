@@ -74,7 +74,7 @@ export const flexModalOptionDefaults: ComfyModalOptions = {
   modalEnterAnimation: shiftEnterAnimation(),
   modalLeaveAnimation: shiftLeaveAnimation(),
   lockscreenEnterAnimation: fadeEnterAnimation(),
-  lockscreenLeaveAnimation: fadeLeaveAnimation(300),
+  lockscreenLeaveAnimation: fadeLeaveAnimation(),
   runEntryAnimationsInParallel: true,
   runLeaveAnimationsInParallel: true,
   paddingHorizontal: 30,
