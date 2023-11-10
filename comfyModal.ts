@@ -13,7 +13,7 @@ interface ModalData {
     scrollContainer?: HTMLElement;
     container?: HTMLElement;
     lockscreen?: HTMLElement;
-    lockscreenGrid?: HTMLElement;
+    lockscreenPadding?: HTMLElement;
     modalWrapper?: HTMLElement;
     modalContent?: HTMLElement;
   }
@@ -94,30 +94,12 @@ export class ComfyModal {
     // Create lockscreen
     this.createLockscreen(modal);
 
-    // Wrap modal in container with some necessary styling
+    // Insert modal content into wrapper that can then be animated
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = `<div 
-        class="comfymodal-wrapper" 
-        style="
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          max-height: 100%; 
-          height: 100%;
-          width: 100%;
-          box-sizing: border-box;
-          padding-left: ${modal.options.paddingHorizontal}px; 
-          padding-right: ${modal.options.paddingHorizontal}px;
-          padding-top: ${modal.options.paddingVertical}px;
-          padding-bottom: ${modal.options.paddingVertical}px;
-        "
-      >     
-    </div>`;
+    wrapper.innerHTML = `<div class="comfymodal-wrapper"></div>`;
     modal.elements.modalWrapper = wrapper.childNodes[0] as HTMLElement;
-
-    // Insert into each other
     modal.elements.modalWrapper.append(modal.elements.modalContent);
-    modal.elements.lockscreenGrid!.append(modal.elements.modalWrapper);
+    modal.elements.lockscreenPadding!.append(modal.elements.modalWrapper);
 
     // Will be triggered when modal has fully opened (after animations)
     const modalOpenedPromise: Promise<HTMLElement> = new Promise(async (resolve, reject) => {
@@ -230,6 +212,7 @@ export class ComfyModal {
           position: absolute; 
           top: 0px; 
           left: 0px; 
+          display: grid;
           width: 100%; 
           height: 100%; 
           background-color: ${modal.options?.lockscreenColor};
@@ -238,19 +221,25 @@ export class ComfyModal {
         '
       >
         <div 
-          class='comfymodal-lockscreen-grid'
+          class='comfymodal-lockscreen-padding'
           style='
-            display: grid;
-            grid-template-columns: 100%;
-            width: 100%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            max-height: 100%; 
             height: 100%;
+            width: 100%;
             box-sizing: border-box;
+            padding-left: ${modal.options.paddingHorizontal}px; 
+            padding-right: ${modal.options.paddingHorizontal}px;
+            padding-top: ${modal.options.paddingVertical}px;
+            padding-bottom: ${modal.options.paddingVertical}px;
           '
         ></div>
       </div>`;
 
     modal.elements.lockscreen = wrapper.childNodes[0] as HTMLElement;
-    modal.elements.lockscreenGrid = modal.elements.lockscreen.querySelector('.comfymodal-lockscreen-grid') as HTMLElement;
+    modal.elements.lockscreenPadding = modal.elements.lockscreen.querySelector('.comfymodal-lockscreen-padding') as HTMLElement;
 
     // Make sure container will contain absolutely positioned child
     const computedStyles = getComputedStyle(modal.elements.container);
@@ -268,7 +257,7 @@ export class ComfyModal {
     if (modal.options.closeOnLockscreenClick) {
       modal.elements.lockscreen.addEventListener('click', event => {
         // Only close on direct clicks on lockscreen, not modal itself
-        if ((event.target as HTMLElement).classList.contains('comfymodal-wrapper')) {
+        if ((event.target as HTMLElement).classList.contains('comfymodal-lockscreen-padding')) {
           this.close(modal.id);
         }
       });
