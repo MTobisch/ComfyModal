@@ -7,12 +7,12 @@ export interface ComfyModalOptions {
   /**
    * An animation that will be applied to the modal as it enters the screen. This is simply a function that is given the modal element, applies animations with any custom logic and returns a promise that resolves when done.
    */
-  modalEnterAnimation?: (modal: HTMLElement) => Promise<any>;
+  enterAnimation?: (modal: HTMLElement) => Promise<any>;
 
   /**
    * An animation that will be applied to the modal as it leaves the screen. This is simply a function that is given the modal element, applies animations with any custom logic and returns a promise that resolves when done.
    */
-  modalLeaveAnimation?: (modal: HTMLElement) => Promise<any>;
+  leaveAnimation?: (modal: HTMLElement) => Promise<any>;
 
   /**
    * An animation that will be applied to the lockscreen as it enters the screen. This is simply a function that is given the lockscreen element, applies animations with any custom logic and returns a promise that resolves when done.
@@ -33,6 +33,11 @@ export interface ComfyModalOptions {
    * Whether or not to run the lockscreen and modal animations in parallel when closing the modal. Default: true
    */
   runLeaveAnimationsInParallel?: boolean;
+
+  /**
+   * Whether to allow closing the modal by clicking on the lockscreen surrounding the modal. If false, can only programmatically close it.
+   */
+  closeOnLockscreenClick?: boolean;  
   
   /**
    * The minimum horizontal padding when the modal dimensions wou.ld exceed the screen size. Default: 30px
@@ -71,12 +76,13 @@ export interface ComfyModalOptions {
 }
 
 export const flexModalOptionDefaults: ComfyModalOptions = {
-  modalEnterAnimation: shiftEnterAnimation(),
-  modalLeaveAnimation: shiftLeaveAnimation(),
+  enterAnimation: shiftEnterAnimation(),
+  leaveAnimation: shiftLeaveAnimation(),
   lockscreenEnterAnimation: fadeEnterAnimation(),
   lockscreenLeaveAnimation: fadeLeaveAnimation(),
   runEntryAnimationsInParallel: true,
   runLeaveAnimationsInParallel: true,
+  closeOnLockscreenClick: true,
   paddingHorizontal: 30,
   paddingVertical: 30,
   lockscreenColor: "#272727cc",
