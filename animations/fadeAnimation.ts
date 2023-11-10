@@ -1,10 +1,10 @@
 import { delay } from "./utils";
 
-export const fadeEnterAnimation = (durationMs: number = 150) => (element: HTMLElement) => {
+export const fadeEnterAnimation = (durationMs: number = 150, delayMs: number = 0) => (element: HTMLElement) => {
   return new Promise(async (resolve, reject) => { 
     // Initial styling
     element.style.opacity = '0';
-    await delay(1);
+    await delay(1 + delayMs);
 
     // Animation
     element.style.transition = `opacity ${durationMs}ms ease`;
@@ -19,11 +19,11 @@ export const fadeEnterAnimation = (durationMs: number = 150) => (element: HTMLEl
   });
 }
 
-export const fadeLeaveAnimation = (durationMs: number = 150) => (element: HTMLElement) => {
+export const fadeLeaveAnimation = (durationMs: number = 150, delayMs: number = 0) => (element: HTMLElement) => {
   return new Promise(async (resolve, reject) => {
     // Initial styling
     element.style.opacity = '1';
-    await delay(1);
+    await delay(1 + delayMs);
 
     // Animation
     element.style.transition = `opacity ${durationMs}ms ease`;

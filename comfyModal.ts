@@ -103,23 +103,16 @@ export class ComfyModal {
 
     // Will be triggered when modal has fully opened (after animations)
     const modalOpenedPromise: Promise<HTMLElement> = new Promise(async (resolve, reject) => {
-      if (modal.options.preEnterAnimationCallback) { modal.options.preEnterAnimationCallback(modal.elements.modalWrapper, modal.elements.lockscreen!); }
-      if (modal.options.runEntryAnimationsInParallel) {
-        const lockscreenAnimationFinished = modal.options.lockscreenEnterAnimation!(modal.elements.lockscreen!);
-        const modalAnimationFinished = modal.options.enterAnimation!(modal.elements.modalWrapper);
-        await Promise.all([
-          lockscreenAnimationFinished,
-          modalAnimationFinished
-        ]);
-      } else {
-        await modal.options.lockscreenEnterAnimation!(modal.elements.lockscreen!);
-        await modal.options.enterAnimation!(modal.elements.modalWrapper);
-      }
-      if (modal.options.postEnterAnimationCallback) { modal.options.postEnterAnimationCallback(modal.elements.modalWrapper, modal.elements.lockscreen!); }
+      if (modal.options.preEnterAnimationCallback) { modal.options.preEnterAnimationCallback(modal.elements.modalContent); }
+      await Promise.all([
+        modal.options.lockscreenEnterAnimation!(modal.elements.lockscreen!),
+        modal.options.enterAnimation!(modal.elements.modalWrapper)
+      ]);
+      if (modal.options.postEnterAnimationCallback) { modal.options.postEnterAnimationCallback(modal.elements.modalContent); }
       
       modal.isOpened = true;
 
-      resolve(modal.elements.modalWrapper);
+      resolve(modal.elements.modalContent);
 
       // Close might already have been requested before opening animation finished. If so, close modal now.
       if (modal.closeIsQueued) {
@@ -174,19 +167,12 @@ export class ComfyModal {
     modal.isClosing = true;
 
     // Run animations of lockscreen and modal in parallel or sequential
-    if (modal.options?.preLeaveAnimationCallback) { modal.options.preLeaveAnimationCallback(modal.elements.modalWrapper!, modal.elements.lockscreen!); }
-    if (modal.options?.runLeaveAnimationsInParallel) {
-      const modalAnimationFinished = modal.options?.leaveAnimation!(modal.elements.modalWrapper!);
-      const lockscreenAnimationFinished = modal.options?.lockscreenLeaveAnimation!(modal.elements.lockscreen!);
-      await Promise.all([
-        lockscreenAnimationFinished,
-        modalAnimationFinished
-      ]);
-    } else {
-      await modal.options?.leaveAnimation!(modal.elements.modalWrapper!);
-      await modal.options?.lockscreenLeaveAnimation!(modal.elements.lockscreen!);
-    }
-    if (modal.options?.postLeaveAnimationCallback) { modal.options.postLeaveAnimationCallback(modal.elements.modalWrapper!, modal.elements.lockscreen!); }
+    if (modal.options.preLeaveAnimationCallback) { modal.options.preLeaveAnimationCallback(modal.elements.modalContent); }
+    await Promise.all([
+      modal.options.leaveAnimation!(modal.elements.modalWrapper),
+      modal.options.lockscreenLeaveAnimation!(modal.elements.lockscreen)
+    ]);
+    if (modal.options.postLeaveAnimationCallback) { modal.options.postLeaveAnimationCallback(modal.elements.modalContent); }
 
     // Remove lockscreen
     this.removeLockscreen(modal);
@@ -195,7 +181,7 @@ export class ComfyModal {
     delete this.openedModals[modal.id!];
 
     // Return detached modal when all is done
-    modal.modalClosedPromiseResolve!(modal.elements.modalWrapper!.children[0] as HTMLElement);
+    modal.modalClosedPromiseResolve!(modal.elements.modalContent);
   }
 
   // Lockscreen management

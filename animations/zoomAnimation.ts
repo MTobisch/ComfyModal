@@ -1,10 +1,10 @@
 import { delay } from "./utils";
 
-export const zoomEnterAnimation = (durationMs: number = 150, fromScale: number = 0.8) => (element: HTMLElement) => {
+export const zoomEnterAnimation = (durationMs: number = 150, delayMs: number = 0, fromScale: number = 0.8) => (element: HTMLElement) => {
   return new Promise(async (resolve, reject) => {
     // Initial styling
     element.style.transform = `scale(${fromScale})`;
-    await delay(1);
+    await delay(1 + delayMs);
 
     // Animation
     element.style.transition = `transform ${durationMs}ms ease`;
@@ -19,11 +19,11 @@ export const zoomEnterAnimation = (durationMs: number = 150, fromScale: number =
   });
 }
 
-export const zoomLeaveAnimation = (durationMs: number = 150, toScale: number = 0.8) => (element: HTMLElement) => {
+export const zoomLeaveAnimation = (durationMs: number = 150, delayMs: number = 0, toScale: number = 0.8) => (element: HTMLElement) => {
   return new Promise(async (resolve, reject) => {
     // Initial styling
     element.style.transform = 'scale(1)';
-    await delay(1);
+    await delay(1 + delayMs);
 
     // Animation
     element.style.transition = `transform ${durationMs}ms ease`;

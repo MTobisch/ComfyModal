@@ -23,16 +23,6 @@ export interface ComfyModalOptions {
    * An animation that will be applied to the lockscreen as it leaves the screen. This is simply a function that is given the lockscreen element, applies animations with any custom logic and returns a promise that resolves when done.
    */
   lockscreenLeaveAnimation?: (lockscreen: HTMLElement) => Promise<any>;  
-  
-  /**
-   * Whether or not to run the lockscreen and modal animations in parallel when opening the modal. Default: true
-   */
-  runEntryAnimationsInParallel?: boolean;
-
-  /**
-   * Whether or not to run the lockscreen and modal animations in parallel when closing the modal. Default: true
-   */
-  runLeaveAnimationsInParallel?: boolean;
 
   /**
    * Whether to allow closing the modal by clicking on the lockscreen surrounding the modal. If false, can only programmatically close it.
@@ -57,22 +47,22 @@ export interface ComfyModalOptions {
   /**
    * A callback that will be executed before running the enter animations
    */
-  preEnterAnimationCallback?: ((modal: HTMLElement, lockscreen: HTMLElement) => void)|null;
+  preEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
    * A callback that will be executed before running the enter animations
    */
-  postEnterAnimationCallback?: ((modal: HTMLElement, lockscreen: HTMLElement) => void)|null;
+  postEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
    * A callback that will be executed before running the enter animations
    */
-  preLeaveAnimationCallback?: ((modal: HTMLElement, lockscreen: HTMLElement) => void)|null;
+  preLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
    * A callback that will be executed before running the enter animations
    */
-  postLeaveAnimationCallback?: ((modal: HTMLElement, lockscreen: HTMLElement) => void)|null;
+  postLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 }
 
 export const flexModalOptionDefaults: ComfyModalOptions = {
@@ -80,8 +70,6 @@ export const flexModalOptionDefaults: ComfyModalOptions = {
   leaveAnimation: shiftLeaveAnimation(),
   lockscreenEnterAnimation: fadeEnterAnimation(),
   lockscreenLeaveAnimation: fadeLeaveAnimation(),
-  runEntryAnimationsInParallel: true,
-  runLeaveAnimationsInParallel: true,
   closeOnLockscreenClick: true,
   paddingHorizontal: 30,
   paddingVertical: 30,
