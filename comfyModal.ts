@@ -6,6 +6,7 @@ interface ModalData {
   modalClosedPromiseResolve?: (value: HTMLElement | PromiseLike<HTMLElement>) => void;
   // Some state
   outerScrollPosition?: number;
+  zIndex: number;
   isOpened: boolean;
   isClosing: boolean;
   closeIsQueued: boolean;
@@ -54,18 +55,15 @@ export class ComfyModal {
    * @param container - What container the modal lockscreen should be appended into. Defaults to the body element.
    */
   open(createFunction: (closeHandler: () => void) => HTMLElement, options: ComfyModalOptions = {}, container: HTMLElement = document.body): ModalReceipt {
-    for (const openedModal of Object.values(this.openedModals)) {
-      if (openedModal.elements.container === container) {
-        console.error('A modal for this container is already opened. Make sure to close it before opening another one.')
-        return;
-      }
-    }
+    const modalsInSameContainer = Object.values(this.openedModals).filter(modalData => modalData.elements.container === container);
+    const zIndex = modalsInSameContainer.length ? Math.max(...modalsInSameContainer.map(modalData => modalData.zIndex)) + 1 : 1;
 
     const id = this.modalCounter++;
     const customCloseFn = (() => this.close(id)).bind(this);
     const modal: ModalData = {
       id: id,       
       options: resolvePartialOptions(options),
+      zIndex: zIndex,
       elements: {
         scrollContainer: (container === document.body ? window : container) as HTMLElement, // If container is body, scroll data can be found in window
         container: container,
@@ -84,9 +82,21 @@ export class ComfyModal {
       lockscreenKey: this.lockscreenKeyListener.bind(this, modal)
     }
 
+    // Sanity check
     if (Object.values(this.openedModals).map(modalData => modalData.elements.modalContent).includes(modal.elements.modalContent)) {
       console.error("A modal with this exact HTMLElement as content is already opened.");
       return;
+    }
+
+    // MultiModal check
+    if (modal.options.multiModalBehaviour === 'exclusive') {
+      for (const modal of Object.values(this.openedModals)) {
+        this.closeModal(modal);
+      }
+    } else if (modal.options.multiModalBehaviour === 'exclusiveInContainer') {
+      for (const modal of modalsInSameContainer) {
+        this.closeModal(modal);
+      }
     }
 
     this.openedModals[id] = modal;
@@ -203,7 +213,7 @@ export class ComfyModal {
           height: 100%; 
           background-color: ${modal.options?.lockscreenColor};
           overflow-y: scroll;
-          z-index: 1000;
+          z-index: ${1000 + modal.zIndex};
         '
       >
         <div 

@@ -27,7 +27,16 @@ export interface ComfyModalOptions {
   /**
    * Whether to allow closing the modal by clicking on the lockscreen surrounding the modal. If false, can only programmatically close it.
    */
-  closeOnLockscreenClick?: boolean;  
+  closeOnLockscreenClick?: boolean;
+
+  /**
+   * Determines how opening this modal affects other, already opened modals
+   * 
+   * onTop (default): The new modal will simply be shown over older modals
+   * exclusive: The new modal will cause all other modals to close globally
+   * exclusiveInContainer: The new modal will cause all other modals in the same container element to close
+   */
+  multiModalBehaviour?: 'onTop'|'exclusive'|'exclusiveInContainer';
   
   /**
    * The minimum horizontal padding when the modal dimensions wou.ld exceed the screen size. Default: 30px
@@ -71,6 +80,7 @@ export const flexModalOptionDefaults: ComfyModalOptions = {
   lockscreenEnterAnimation: fadeEnterAnimation(),
   lockscreenLeaveAnimation: fadeLeaveAnimation(),
   closeOnLockscreenClick: true,
+  multiModalBehaviour: 'onTop',
   paddingHorizontal: 30,
   paddingVertical: 30,
   lockscreenColor: "#272727cc",
