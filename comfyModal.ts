@@ -5,7 +5,6 @@ interface ModalData {
   options: ComfyModalOptions;
   modalClosedPromiseResolve?: (value: HTMLElement | PromiseLike<HTMLElement>) => void;
   // Some state
-  outerScrollPosition?: number;
   zIndex: number;
   isOpened: boolean;
   isClosing: boolean;
@@ -42,6 +41,7 @@ export class ComfyModal {
   wheelEvent: any;
   wheelEventOpts: any;
   lastTouchCoords: {x: number, y: number} = null; 
+  touchScrollAxis: 'x'|'y' = null;
 
   constructor() {
     this.initWheelEventVars();
@@ -212,7 +212,7 @@ export class ComfyModal {
           width: 100%; 
           height: 100%; 
           background-color: ${modal.options?.lockscreenColor};
-          overflow-y: scroll;
+          overflow: auto;
           z-index: ${1000 + modal.zIndex};
         '
       >
@@ -264,8 +264,17 @@ export class ComfyModal {
   }
 
   repositionLockscreen(modal: ModalData) {
-    modal.outerScrollPosition = modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollY : modal.elements.scrollContainer.scrollTop; 
-    modal.elements.lockscreen.style.top = modal.outerScrollPosition + 'px';
+    // y positioning
+    const outerYScrollPosition = modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollY : modal.elements.scrollContainer.scrollTop; 
+    modal.elements.lockscreen.style.top = outerYScrollPosition + 'px';
+    //modal.elements.lockscreen.style.height = window.innerHeight + 'px';
+
+    // x positioning
+    const outerXScrollPosition = modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollX : modal.elements.scrollContainer.scrollLeft; 
+    modal.elements.lockscreen.style.left = outerXScrollPosition + 'px';
+    //modal.elements.lockscreen.style.width = window.innerWidth + 'px';
+    
+    console.log(window.innerWidth, window.outerWidth);
   }
 
   removeLockscreen(modal: ModalData) {
@@ -320,12 +329,18 @@ export class ComfyModal {
   }
 
   lockscreenWheelListener(modal: ModalData, event) {
-    const direction = (event as any).deltaY < 0 ? 'up' : 'down';
+    let direction: any;
+    if (event.deltaY < 0) { direction = 'up'; }
+    if (event.deltaY > 0) { direction = 'down'; }
+    if (event.deltaX < 0) { direction = 'left'; }
+    if (event.deltaX > 0) { direction = 'right'; }
+
     this.preventEventIfBackgroundScroll(event, modal, direction);
   }
 
   lockscreenTouchStartListener(modal: ModalData, event: TouchEvent) {
     this.lastTouchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
+    this.touchScrollAxis = null;
   }
 
   lockscreenTouchMoveListener (modal: ModalData, event: TouchEvent) {
@@ -335,7 +350,25 @@ export class ComfyModal {
     // The way it works for both is to simply take the first coords from TouchStart instead and compare them to the TouchMove coords.
     // As TouchMove only triggers when having moved sufficiently far away from TouchStart coords, coords are guaranteed to be different
     const touchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
-    let direction: 'up'|'down' = touchCoords.y > this.lastTouchCoords.y ? 'up' : 'down';
+    const diffCoords = {x: touchCoords.x - this.lastTouchCoords.x, y: touchCoords.y - this.lastTouchCoords.y};
+
+    // Additionally, lock the scroll axis to either x or y on touch scrolling. A touch scroll could otherwise be diagonal
+    const axis = Math.abs(diffCoords.y) > Math.abs(diffCoords.x) ? 'y' : 'x';
+    if (this.touchScrollAxis === null) {
+      this.touchScrollAxis = axis;
+    }
+
+    if (axis !== this.touchScrollAxis) {
+      event.preventDefault();
+      return;
+    }
+
+    let direction: any;
+    if (this.touchScrollAxis === 'x' && diffCoords.x >= 0) { direction = 'left'; }
+    if (this.touchScrollAxis === 'x'  && diffCoords.x < 0) { direction = 'right'; }
+    if (this.touchScrollAxis === 'y'  && diffCoords.y >= 0) { direction = 'up'; }
+    if (this.touchScrollAxis === 'y'  && diffCoords.y < 0) { direction = 'down'; }
+
     this.preventEventIfBackgroundScroll(event, modal, direction);
     this.lastTouchCoords = touchCoords;
   }
@@ -383,19 +416,32 @@ export class ComfyModal {
     }
   }
 
-  preventEventIfBackgroundScroll(event, modal: ModalData, direction: 'up'|'down') {
-    const scrollTop = modal.elements.lockscreen.scrollTop;
-    const maxScrollTop = modal.elements.lockscreen.scrollHeight - modal.elements.lockscreen.clientHeight;
+  preventEventIfBackgroundScroll(event, modal: ModalData, direction: 'up'|'down'|'left'|'right') {
     const safetyDistance = 5;
+    let scrollDisallowed = false;
 
     // By default, if there is nothing (further) to scroll in the modal, browsers will fall back to scrolling the next best thing in the DOM hierarchy, often window
     // This is some logic to prevent that. If a modal is open, don't scroll anything in the background!
-    const scrollDisallowed = 
-      maxScrollTop === 0 ||                                                 // Always prevent scroll if nothing to scroll in modal
-      (direction === 'up' && scrollTop <= 0 + safetyDistance) ||            // Don't scroll further if modal is scrolled all the way to top
-      (direction === 'down' && scrollTop >= maxScrollTop - safetyDistance)  // Don't scroll further if modal is scrolled all the way to bottom
+
+    if ((direction === 'up' || direction === 'down')) {
+      const scrollPos = modal.elements.lockscreen.scrollTop;
+      const maxScrollPos = modal.elements.lockscreen.scrollHeight - modal.elements.lockscreen.clientHeight;
+      scrollDisallowed = 
+        maxScrollPos === 0 ||                                                     // Always prevent scroll if nothing to scroll in modal
+        (direction === 'up' && scrollPos <= 0 + safetyDistance) ||                // Don't scroll further if modal is scrolled all the way to top
+        (direction === 'down' && scrollPos >= maxScrollPos - safetyDistance)      // Don't scroll further if modal is scrolled all the way to bottom
+    }
     
-    // console.log(direction, scrollTop, maxScrollTop, scrollDisallowed ? 'block' : 'allow');
+    if ((direction === 'left' || direction === 'right')) {
+      const scrollPos = modal.elements.lockscreen.scrollLeft;
+      const maxScrollPos = modal.elements.lockscreen.scrollWidth - modal.elements.lockscreen.clientWidth;
+      scrollDisallowed = 
+        maxScrollPos === 0 ||                                                     // Always prevent scroll if nothing to scroll in modal
+        (direction === 'left' && scrollPos <= 0 + safetyDistance) ||                // Don't scroll further if modal is scrolled all the way to top
+        (direction === 'right' && scrollPos >= maxScrollPos - safetyDistance)      // Don't scroll further if modal is scrolled all the way to bottom
+    }
+    
+    console.log(direction, scrollDisallowed ? 'block' : 'allow');
     if (scrollDisallowed) {
       event.preventDefault();
     }
