@@ -163,8 +163,6 @@ async function closeModalObject(modal: ModalData) {
     return;
   }
 
-  console.log(modal);
-
   // If closing a modal that hasn't fully opened yet, queue close request. It will then close as soon as it has fully opened.
   if (!modal.isOpened) {
     modal.closeIsQueued = true;
