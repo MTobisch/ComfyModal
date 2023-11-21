@@ -2,6 +2,7 @@ import { zoomEnterAnimation } from "./animations/zoomAnimation";
 import { shiftEnterAnimation, shiftLeaveAnimation } from "./animations/shiftAnimation";
 import { fadeEnterAnimation, fadeLeaveAnimation } from "./animations/fadeAnimation";
 import { delay } from "./animations/utils";
+import { noAnimation } from "./animations/noAnimation";
 
 export interface ComfyModalOptions {
   /**
@@ -39,21 +40,6 @@ export interface ComfyModalOptions {
   multiModalBehaviour?: 'onTop'|'exclusive'|'exclusiveInContainer';
   
   /**
-   * The minimum horizontal padding when the modal dimensions wou.ld exceed the screen size. Default: 30px
-   */
-  paddingHorizontal?: number;              
-
-  /**
-   * The minimum vertical padding when the modal dimensions wou.ld exceed the screen size. Default: 30px                 
-   */
-  paddingVertical?: number;
-
-  /**
-   * A CSS color value to use for the lockscreen. Usually a semi-transparent tone of black.
-   */
-  lockscreenColor?: string;
-  
-  /**
    * A callback that will be executed before running the enter animations
    */
   preEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
@@ -72,6 +58,43 @@ export interface ComfyModalOptions {
    * A callback that will be executed before running the enter animations
    */
   postLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
+
+  /**
+   * Various CSS values that can be applied to modal elements
+   */
+  styles?: {
+
+    /**
+     * A CSS color value to use for the lockscreen. Usually a semi-transparent tone of black.
+     */
+    lockscreenColor?: string;
+
+    /**
+     * The minimum distance the modal should have from the edges of the screen when scrolled all the way in any direction. Default: 30px
+     */
+    scrollPadding?: string;            
+
+    /**
+     * A fixed width for the modal
+     */
+    width?: string;
+
+    /**
+     * A fixed height for the modal
+     */
+    height?: string;
+
+    /**
+     * A fixed max width for the modal
+     */
+    maxWidth?: string;
+
+    /**
+     * A fixed max height for the modal
+     */
+    maxHeight?: string;
+
+  }
 }
 
 export const flexModalOptionDefaults: ComfyModalOptions = {
@@ -81,21 +104,55 @@ export const flexModalOptionDefaults: ComfyModalOptions = {
   lockscreenLeaveAnimation: fadeLeaveAnimation(),
   closeOnLockscreenClick: true,
   multiModalBehaviour: 'onTop',
-  paddingHorizontal: 30,
-  paddingVertical: 30,
-  lockscreenColor: "#272727cc",
   preEnterAnimationCallback: null,
   postEnterAnimationCallback: null,
   preLeaveAnimationCallback: null,
-  postLeaveAnimationCallback: null
+  postLeaveAnimationCallback: null,
+  styles: {
+    lockscreenColor: "#232426cc",
+    scrollPadding: "30px 30px",
+    width: 'initial',
+    height: 'initial',
+    maxWidth: 'initial',
+    maxHeight: 'initial'
+  }
 }
 
-export function resolvePartialOptions(partialOptions): ComfyModalOptions {
-  const finalOptions = {};
+export function resolvePartialOptions(partialOptions: ComfyModalOptions, defaultOptions: ComfyModalOptions = flexModalOptionDefaults): ComfyModalOptions {
+  const combinedOptions: ComfyModalOptions = combineWithDefaults(partialOptions, defaultOptions);
 
-  for (const [key, defaultValue] of Object.entries(flexModalOptionDefaults)) {
-    finalOptions[key] = partialOptions.hasOwnProperty(key) ? partialOptions[key] : defaultValue;
+  // Some special logic
+  combinedOptions.enterAnimation = combinedOptions.enterAnimation || noAnimation;
+  combinedOptions.leaveAnimation = combinedOptions.leaveAnimation || noAnimation;
+  combinedOptions.lockscreenEnterAnimation = combinedOptions.lockscreenEnterAnimation || noAnimation;
+  combinedOptions.lockscreenLeaveAnimation = combinedOptions.lockscreenLeaveAnimation || noAnimation;
+
+  return combinedOptions;
+}
+
+/**
+ * Merges default values with custom values that overwrite them. But only accepts custom values for properties that also exist in the defaults.
+ */
+function combineWithDefaults(customValues: {[key: string]: any}, defaultValues: {[key: string]: any}): {[key: string]: any} {
+  const combinedValues = {};
+
+  for (const [key, defaultValue] of Object.entries(defaultValues)) {
+
+    // There is a custom value for this property. Use it.
+    if (customValues.hasOwnProperty(key)) {
+      
+      // Might be nested object literal
+      if (defaultValue && Object.getPrototypeOf(defaultValue) === Object.prototype) {
+        combinedValues[key] = combineWithDefaults(customValues[key], defaultValue);
+      } else {
+        combinedValues[key] = customValues[key];
+      }
+
+    // There is no custom value for this property. Use default.
+    } else {      
+      combinedValues[key] = defaultValue;
+    }
   }
 
-  return finalOptions;
+  return combinedValues;
 }

@@ -101,7 +101,16 @@ export function openModal(createFunction: (closeHandler: () => void) => HTMLElem
 
   // Insert modal content into wrapper that can then be animated
   const wrapper = document.createElement('div');
-  wrapper.innerHTML = `<div class="comfymodal-wrapper"></div>`;
+  wrapper.innerHTML = `<div 
+    class="comfymodal-wrapper"
+    style="
+      width: ${ modal.options.styles.width };
+      height: ${ modal.options.styles.height };
+      max-width: ${ modal.options.styles.maxWidth };
+      max-height: ${ modal.options.styles.maxHeight };
+    "
+  ></div>`;
+
   modal.elements.modalWrapper = wrapper.childNodes[0] as HTMLElement;
   modal.elements.modalWrapper.append(modal.elements.modalContent);
   modal.elements.lockscreenPadding!.append(modal.elements.modalWrapper);
@@ -206,7 +215,7 @@ async function createLockscreen(modal: ModalData) {
         display: grid;
         width: 100%; 
         height: 100%; 
-        background-color: ${modal.options?.lockscreenColor};
+        background-color: ${modal.options.styles.lockscreenColor};
         overflow: auto;
         z-index: ${1000 + modal.zIndex};
       '
@@ -221,10 +230,7 @@ async function createLockscreen(modal: ModalData) {
           height: 100%;
           width: 100%;
           box-sizing: border-box;
-          padding-left: ${modal.options.paddingHorizontal}px; 
-          padding-right: ${modal.options.paddingHorizontal}px;
-          padding-top: ${modal.options.paddingVertical}px;
-          padding-bottom: ${modal.options.paddingVertical}px;
+          padding: ${ modal.options.styles.scrollPadding }; 
         '
       ></div>
     </div>`;
@@ -332,7 +338,9 @@ function lockscreenWheelListener(modal: ModalData, event) {
   if (event.deltaX < 0) { direction = 'left'; }
   if (event.deltaX > 0) { direction = 'right'; }
 
-  preventEventIfBackgroundScroll(event, modal, direction);
+  if (!canStillScrollWithinLockscreen(event.target, modal, direction)) {
+    event.preventDefault();
+  }
 }
 
 function lockscreenTouchStartListener(modal: ModalData, event: TouchEvent) {
@@ -366,7 +374,9 @@ function lockscreenTouchMoveListener (modal: ModalData, event: TouchEvent) {
   if (touchScrollAxis === 'y'  && diffCoords.y >= 0) { direction = 'up'; }
   if (touchScrollAxis === 'y'  && diffCoords.y < 0) { direction = 'down'; }
 
-  preventEventIfBackgroundScroll(event, modal, direction);
+  if (!canStillScrollWithinLockscreen(event.target as HTMLElement, modal, direction)) {
+    event.preventDefault();
+  }
   lastTouchCoords = touchCoords;
 }
 
@@ -407,39 +417,52 @@ function lockscreenKeyListener(modal: ModalData, event) {
     }
     
     if (direction) {
-      preventEventIfBackgroundScroll(event, modal, direction);
+      if (!canStillScrollWithinLockscreen(event.target, modal, direction)) {
+        event.preventDefault();
+      }
     }
     */
   }
 }
 
-function preventEventIfBackgroundScroll(event, modal: ModalData, direction: 'up'|'down'|'left'|'right') {
-  const safetyDistance = 5;
-  let scrollDisallowed = false;
 
-  // By default, if there is nothing (further) to scroll in the modal, browsers will fall back to scrolling the next best thing in the DOM hierarchy, often window
-  // This is some logic to prevent that. If a modal is open, don't scroll anything in the background!
 
-  if ((direction === 'up' || direction === 'down')) {
-    const scrollPos = modal.elements.lockscreen.scrollTop;
-    const maxScrollPos = modal.elements.lockscreen.scrollHeight - modal.elements.lockscreen.clientHeight;
-    scrollDisallowed = 
-      maxScrollPos === 0 ||                                                     // Always prevent scroll if nothing to scroll in modal
-      (direction === 'up' && scrollPos <= 0 + safetyDistance) ||                // Don't scroll further if modal is scrolled all the way to top
-      (direction === 'down' && scrollPos >= maxScrollPos - safetyDistance)      // Don't scroll further if modal is scrolled all the way to bottom
+
+/**
+ * By default, if there is nothing (further) to scroll in the modal, browsers will fall back to scrolling the next best thing in the DOM hierarchy, often window
+ * To prevent that, have to find out if you can still scroll in any of the elements between (and including) that element and lockscreen. This function does that.
+ */
+function canStillScrollWithinLockscreen(element: HTMLElement, modal: ModalData, direction: 'up'|'down'|'left'|'right', safetyDistance: number = 5) {
+  // Get all parent elements up to and including lockscreen
+  let currentElement = element;
+  const elementHierarchy = [];
+  while (true) {
+    elementHierarchy.push(currentElement);
+    if (currentElement.nodeName === 'BODY') {
+      return false;
+    }
+    if (currentElement.classList.contains('comfymodal-lockscreen')) {
+      break;
+    }
+    currentElement = currentElement.parentElement;
   }
-  
-  if ((direction === 'left' || direction === 'right')) {
-    const scrollPos = modal.elements.lockscreen.scrollLeft;
-    const maxScrollPos = modal.elements.lockscreen.scrollWidth - modal.elements.lockscreen.clientWidth;
-    scrollDisallowed = 
-      maxScrollPos === 0 ||                                                     // Always prevent scroll if nothing to scroll in modal
-      (direction === 'left' && scrollPos <= 0 + safetyDistance) ||                // Don't scroll further if modal is scrolled all the way to top
-      (direction === 'right' && scrollPos >= maxScrollPos - safetyDistance)      // Don't scroll further if modal is scrolled all the way to bottom
+
+  // Figure out if you can still scroll into the desired direction in any of those elements
+  for (const element of elementHierarchy) {
+    const scrollPos = ['up', 'down'].includes(direction) ? element.scrollTop : element.scrollLeft;
+    const maxScrollPos = ['up', 'down'].includes(direction) ? element.scrollHeight - element.clientHeight : element.scrollWidth - element.clientWidth;
+
+    const canStillScrollInElement = 
+      maxScrollPos !== 0 &&                                                                     // Element has a scrollbar to begin with
+      (
+        (['up', 'left'].includes(direction) && scrollPos > 0 + safetyDistance) ||               // If scrolling to top/left, can still scroll in to 0
+        (['down', 'right'].includes(direction) && scrollPos < maxScrollPos - safetyDistance)    // If scrolling to down/right, can still scroll to max scroll pos
+      )
+
+    if (canStillScrollInElement) {
+      return true;
+    }
   }
-  
-  // console.log(direction, scrollDisallowed ? 'block' : 'allow');
-  if (scrollDisallowed) {
-    event.preventDefault();
-  }
+
+  return false;
 }
