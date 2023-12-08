@@ -22,7 +22,7 @@ openModal(() => modalContent);
 
 Note that this library **is completely style-agnostic** for maximum flexbility, so `.modalContent` in this example should bring its own styling.
 
-#### Programmatic content
+### Programmatic content
 
 If you would rather create a modal programmatically, you can also easily do so and optionally make use of the handy `closeModal` parameter of the creation function to close the modal from within:
 
@@ -210,7 +210,7 @@ let options: ComfyModalOptions = {
 openModal(createFn, options);
 ```
 
-#### Custom animations
+### Custom animations
 
 If you would like to use custom animations, you can easily create them. Animations for `ComfyModal` are simply functions that are given the modal element as a parameter and return a promise that resolves when the animation is done. 
 
