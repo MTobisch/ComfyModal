@@ -85,6 +85,7 @@ import { closeModal } from 'comfyModal';
 import { ComfyModalOptions } from "comfyModalOptions";
 
 let options: ComfyModalOptions = { ... };
+
 openModal(createFn, options);
 ```
 
