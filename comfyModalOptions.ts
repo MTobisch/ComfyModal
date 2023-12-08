@@ -45,17 +45,17 @@ export interface ComfyModalOptions {
   preEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
-   * A callback that will be executed before running the enter animations
+   * A callback that will be executed after running the enter animations
    */
   postEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
-   * A callback that will be executed before running the enter animations
+   * A callback that will be executed before running the leave animations
    */
   preLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 
   /**
-   * A callback that will be executed before running the enter animations
+   * A callback that will be executed after running the leave animations
    */
   postLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
 

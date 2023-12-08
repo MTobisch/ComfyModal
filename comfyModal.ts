@@ -45,11 +45,11 @@ let touchScrollAxis: 'x'|'y' = null;
 /**
  * Creates a modal with any content in a special lockscreen over the normal content
  *
- * @param createFunction - A function that returns the modal html. Is given a closeHandler fn as a parameter that can (for example) be used in click events within the modal to close it
+ * @param createFunction - A function that returns the modal html. Is given a closeModal fn as a parameter that can (for example) be used in click events within the modal to close it
  * @param options - A FlexModalOptions object that can be used to customize the behaviour of the modal
  * @param container - What container the modal lockscreen should be appended into. Defaults to the body element.
  */
-export function openModal(createFunction: (closeHandler: () => void) => HTMLElement, options: ComfyModalOptions = {}, container: HTMLElement = document.body): ModalReceipt {
+export function openModal(createFunction: (closeModal: () => void) => HTMLElement, options: ComfyModalOptions = {}, container: HTMLElement = document.body): ModalReceipt {
   const modalsInSameContainer = Object.values(openedModals).filter(modalData => modalData.elements.container === container);
   const zIndex = modalsInSameContainer.length ? Math.max(...modalsInSameContainer.map(modalData => modalData.zIndex)) + 1 : 1;
 
