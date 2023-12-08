@@ -17,6 +17,7 @@ To open a modal, you need to call the `openModal` function and give it a creatio
 import { openModal } from 'comfyModal';
 
 let modalContent = document.querySelector('.modalContent');
+
 openModal(() => modalContent);
 ```
 
@@ -30,6 +31,7 @@ If you would rather create a modal programmatically, you can also easily do so a
 import { openModal } from 'comfyModal';
 
 let createFn = closeModal => {
+
   // Let's create a div with the modal content
   let modalContent = document.createElement("div");
   modalContent.innerHTML = `
@@ -207,6 +209,7 @@ let options: ComfyModalOptions = {
     enterAnimation: bounceEnterAnimation(500), // Specifies the duration in ms
     leaveAnimation: bounceLeaveAnimation(300)
 };
+
 openModal(createFn, options);
 ```
 
@@ -225,6 +228,7 @@ let duration = 300;
 
 let myCustomEnterAnimation = modalElement => {
   return new Promise(async (resolve, reject) => {
+
     // Initial styling
     modalElement.style.opacity = '0';
     await delay(1);
@@ -245,6 +249,7 @@ let myCustomEnterAnimation = modalElement => {
 let options: ComfyModalOptions = { 
     enterAnimation: myCustomEnterAnimation
 };
+
 openModal(createFn, options);
 ```
 
