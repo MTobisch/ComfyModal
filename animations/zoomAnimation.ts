@@ -1,35 +1,39 @@
-import { delay } from "./utils";
+import { delay } from './utils';
 
-export const zoomEnterAnimation = (durationMs: number = 150, delayMs: number = 0, fromScale: number = 0.8) => (element: HTMLElement) => {
-  return new Promise(async (resolve, reject) => {
-    // Initial styling
-    element.style.transform = `scale(${fromScale})`;
-    await delay(1 + delayMs);
+export const zoomEnterAnimation =
+  (durationMs: number = 150, delayMs: number = 0, fromScale: number = 0.8) =>
+  (element: HTMLElement) => {
+    return new Promise(async (resolve, reject) => {
+      // Initial styling
+      element.style.transform = `scale(${fromScale})`;
+      await delay(1 + delayMs);
 
-    // Animation
-    element.style.transition = `transform ${durationMs}ms ease`;
-    element.style.transform = 'scale(1)';
-    await delay(durationMs);
+      // Animation
+      element.style.transition = `transform ${durationMs}ms ease`;
+      element.style.transform = 'scale(1)';
+      await delay(durationMs);
 
-    // Cleanup    
-    element.style.transform = '';
-    element.style.transition = '';
+      // Cleanup
+      element.style.transform = '';
+      element.style.transition = '';
 
-    resolve(true);
-  });
-}
+      resolve(true);
+    });
+  };
 
-export const zoomLeaveAnimation = (durationMs: number = 150, delayMs: number = 0, toScale: number = 0.8) => (element: HTMLElement) => {
-  return new Promise(async (resolve, reject) => {
-    // Initial styling
-    element.style.transform = 'scale(1)';
-    await delay(1 + delayMs);
+export const zoomLeaveAnimation =
+  (durationMs: number = 150, delayMs: number = 0, toScale: number = 0.8) =>
+  (element: HTMLElement) => {
+    return new Promise(async (resolve, reject) => {
+      // Initial styling
+      element.style.transform = 'scale(1)';
+      await delay(1 + delayMs);
 
-    // Animation
-    element.style.transition = `transform ${durationMs}ms ease`;
-    element.style.transform = `scale(${toScale})`;
-    await delay(durationMs);
+      // Animation
+      element.style.transition = `transform ${durationMs}ms ease`;
+      element.style.transform = `scale(${toScale})`;
+      await delay(durationMs);
 
-    resolve(true);
-  });
-}
+      resolve(true);
+    });
+  };

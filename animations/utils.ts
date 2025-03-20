@@ -4,4 +4,4 @@ export const delay: (ms: number) => Promise<boolean> = (ms: number) => {
       resolve(true);
     }, ms);
   });
-}
+};

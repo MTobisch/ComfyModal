@@ -1,8 +1,8 @@
-import { zoomEnterAnimation } from "./animations/zoomAnimation";
-import { shiftEnterAnimation, shiftLeaveAnimation } from "./animations/shiftAnimation";
-import { fadeEnterAnimation, fadeLeaveAnimation } from "./animations/fadeAnimation";
-import { delay } from "./animations/utils";
-import { noAnimation } from "./animations/noAnimation";
+import { zoomEnterAnimation } from './animations/zoomAnimation';
+import { shiftEnterAnimation, shiftLeaveAnimation } from './animations/shiftAnimation';
+import { fadeEnterAnimation, fadeLeaveAnimation } from './animations/fadeAnimation';
+import { delay } from './animations/utils';
+import { noAnimation } from './animations/noAnimation';
 
 export interface ComfyModalOptions {
   /**
@@ -23,7 +23,7 @@ export interface ComfyModalOptions {
   /**
    * An animation that will be applied to the lockscreen as it leaves the screen. This is simply a function that is given the lockscreen element, applies animations with any custom logic and returns a promise that resolves when done.
    */
-  lockscreenLeaveAnimation?: (lockscreen: HTMLElement) => Promise<any>;  
+  lockscreenLeaveAnimation?: (lockscreen: HTMLElement) => Promise<any>;
 
   /**
    * Whether to allow closing the modal by clicking on the lockscreen surrounding the modal. If false, can only programmatically close it.
@@ -32,38 +32,37 @@ export interface ComfyModalOptions {
 
   /**
    * Determines how opening this modal affects other, already opened modals
-   * 
+   *
    * onTop (default): The new modal will simply be shown over older modals
    * exclusive: The new modal will cause all other modals to close globally
    * exclusiveInContainer: The new modal will cause all other modals in the same container element to close
    */
-  multiModalBehaviour?: 'onTop'|'exclusive'|'exclusiveInContainer';
-  
+  multiModalBehaviour?: 'onTop' | 'exclusive' | 'exclusiveInContainer';
+
   /**
    * A callback that will be executed before running the enter animations
    */
-  preEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
+  preEnterAnimationCallback?: ((modalContent: HTMLElement) => void) | null;
 
   /**
    * A callback that will be executed after running the enter animations
    */
-  postEnterAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
+  postEnterAnimationCallback?: ((modalContent: HTMLElement) => void) | null;
 
   /**
    * A callback that will be executed before running the leave animations
    */
-  preLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
+  preLeaveAnimationCallback?: ((modalContent: HTMLElement) => void) | null;
 
   /**
    * A callback that will be executed after running the leave animations
    */
-  postLeaveAnimationCallback?: ((modalContent: HTMLElement) => void)|null;
+  postLeaveAnimationCallback?: ((modalContent: HTMLElement) => void) | null;
 
   /**
    * Various CSS values that can be applied to modal elements
    */
   styles?: {
-
     /**
      * A CSS color value to use for the lockscreen. Usually a semi-transparent tone of black.
      */
@@ -72,7 +71,7 @@ export interface ComfyModalOptions {
     /**
      * The minimum distance the modal should have from the edges of the screen when scrolled all the way in any direction. Default: 30px
      */
-    scrollPadding?: string;            
+    scrollPadding?: string;
 
     /**
      * A fixed width for the modal
@@ -93,8 +92,7 @@ export interface ComfyModalOptions {
      * A fixed max height for the modal
      */
     maxHeight?: string;
-
-  }
+  };
 }
 
 export const flexModalOptionDefaults: ComfyModalOptions = {
@@ -109,16 +107,19 @@ export const flexModalOptionDefaults: ComfyModalOptions = {
   preLeaveAnimationCallback: null,
   postLeaveAnimationCallback: null,
   styles: {
-    lockscreenColor: "#232426cc",
-    scrollPadding: "30px 30px",
+    lockscreenColor: '#232426cc',
+    scrollPadding: '30px 30px',
     width: 'initial',
     height: 'initial',
     maxWidth: 'initial',
     maxHeight: 'initial'
   }
-}
+};
 
-export function resolvePartialOptions(partialOptions: ComfyModalOptions, defaultOptions: ComfyModalOptions = flexModalOptionDefaults): ComfyModalOptions {
+export function resolvePartialOptions(
+  partialOptions: ComfyModalOptions,
+  defaultOptions: ComfyModalOptions = flexModalOptionDefaults
+): ComfyModalOptions {
   const combinedOptions: ComfyModalOptions = combineWithDefaults(partialOptions, defaultOptions);
 
   // Some special logic
@@ -133,14 +134,12 @@ export function resolvePartialOptions(partialOptions: ComfyModalOptions, default
 /**
  * Merges default values with custom values that overwrite them. But only accepts custom values for properties that also exist in the defaults.
  */
-function combineWithDefaults(customValues: {[key: string]: any}, defaultValues: {[key: string]: any}): {[key: string]: any} {
+function combineWithDefaults(customValues: Record<string, any>, defaultValues: Record<string, any>): Record<string, any> {
   const combinedValues = {};
 
   for (const [key, defaultValue] of Object.entries(defaultValues)) {
-
     // There is a custom value for this property. Use it.
-    if (customValues.hasOwnProperty(key)) {
-      
+    if (Object.prototype.hasOwnProperty.call(customValues, key)) {
       // Might be nested object literal
       if (defaultValue && Object.getPrototypeOf(defaultValue) === Object.prototype) {
         combinedValues[key] = combineWithDefaults(customValues[key], defaultValue);
@@ -148,8 +147,8 @@ function combineWithDefaults(customValues: {[key: string]: any}, defaultValues: 
         combinedValues[key] = customValues[key];
       }
 
-    // There is no custom value for this property. Use default.
-    } else {      
+      // There is no custom value for this property. Use default.
+    } else {
       combinedValues[key] = defaultValue;
     }
   }

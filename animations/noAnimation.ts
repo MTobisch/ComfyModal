@@ -2,4 +2,4 @@ export const noAnimation: (element: HTMLElement) => Promise<boolean> = (element:
   return new Promise((resolve, reject) => {
     resolve(true);
   });
-}
+};

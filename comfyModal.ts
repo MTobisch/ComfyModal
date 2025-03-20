@@ -1,4 +1,4 @@
-import { ComfyModalOptions, resolvePartialOptions } from "./comfyModalOptions";
+import { ComfyModalOptions, resolvePartialOptions } from './comfyModalOptions';
 
 interface ModalData {
   id: number;
@@ -16,31 +16,31 @@ interface ModalData {
     lockscreenPadding?: HTMLElement;
     modalWrapper?: HTMLElement;
     modalContent?: HTMLElement;
-  }
+  };
   listeners?: {
-    containerScroll: Function,
-    containerResize: Function,
-    lockscreenWheel: Function,
-    lockscreenTouchStart: Function,
-    lockscreenTouchMove: Function,
-    lockscreenKey: Function
-  }
+    containerScroll: any;
+    containerResize: any;
+    lockscreenWheel: any;
+    lockscreenTouchStart: any;
+    lockscreenTouchMove: any;
+    lockscreenKey: any;
+  };
 }
 
 export interface ModalReceipt {
   id: number;
-  close: Function;
+  close: any;
   wasOpened: Promise<HTMLElement>;
   wasClosed: Promise<HTMLElement>;
 }
 
 // State
 let modalCounter: number = 0;
-let openedModals: {[key: number]: ModalData} = {};
+const openedModals: Record<number, ModalData> = {};
 let wheelEvent: any = null;
 let wheelEventOpts: any = null;
-let lastTouchCoords: {x: number, y: number} = null; 
-let touchScrollAxis: 'x'|'y' = null;
+let lastTouchCoords: { x: number; y: number } = null;
+let touchScrollAxis: 'x' | 'y' = null;
 
 /**
  * Creates a modal with any content in a special lockscreen over the normal content
@@ -49,22 +49,26 @@ let touchScrollAxis: 'x'|'y' = null;
  * @param options - A FlexModalOptions object that can be used to customize the behaviour of the modal
  * @param container - What container the modal lockscreen should be appended into. Defaults to the body element.
  */
-export function openModal(createFunction: (closeModal: () => void) => HTMLElement, options: ComfyModalOptions = {}, container: HTMLElement = document.body): ModalReceipt {
+export function openModal(
+  createFunction: (closeModal: () => void) => HTMLElement,
+  options: ComfyModalOptions = {},
+  container: HTMLElement = document.body
+): ModalReceipt {
   const modalsInSameContainer = Object.values(openedModals).filter(modalData => modalData.elements.container === container);
   const zIndex = modalsInSameContainer.length ? Math.max(...modalsInSameContainer.map(modalData => modalData.zIndex)) + 1 : 1;
 
   const id = modalCounter++;
-  const customCloseFn = (() => closeModal(id));
+  const customCloseFn = () => closeModal(id);
   const modal: ModalData = {
-    id: id,       
+    id: id,
     options: resolvePartialOptions(options),
     zIndex: zIndex,
     elements: {
       scrollContainer: (container === document.body ? window : container) as HTMLElement, // If container is body, scroll data can be found in window
       container: container,
-      modalContent: createFunction(customCloseFn),
+      modalContent: createFunction(customCloseFn)
     },
-    isOpened: false, 
+    isOpened: false,
     isClosing: false,
     closeIsQueued: false
   };
@@ -75,11 +79,15 @@ export function openModal(createFunction: (closeModal: () => void) => HTMLElemen
     lockscreenTouchStart: lockscreenTouchStartListener.bind(null, modal),
     lockscreenTouchMove: lockscreenTouchMoveListener.bind(null, modal),
     lockscreenKey: lockscreenKeyListener.bind(null, modal)
-  }
+  };
 
   // Sanity check
-  if (Object.values(openedModals).map(modalData => modalData.elements.modalContent).includes(modal.elements.modalContent)) {
-    console.error("A modal with this exact HTMLElement as content is already opened.");
+  if (
+    Object.values(openedModals)
+      .map(modalData => modalData.elements.modalContent)
+      .includes(modal.elements.modalContent)
+  ) {
+    console.error('A modal with this exact HTMLElement as content is already opened.');
     return;
   }
 
@@ -104,10 +112,10 @@ export function openModal(createFunction: (closeModal: () => void) => HTMLElemen
   wrapper.innerHTML = `<div 
     class="comfymodal-wrapper"
     style="
-      width: ${ modal.options.styles.width };
-      height: ${ modal.options.styles.height };
-      max-width: ${ modal.options.styles.maxWidth };
-      max-height: ${ modal.options.styles.maxHeight };
+      width: ${modal.options.styles.width};
+      height: ${modal.options.styles.height};
+      max-width: ${modal.options.styles.maxWidth};
+      max-height: ${modal.options.styles.maxHeight};
     "
   ></div>`;
 
@@ -116,14 +124,19 @@ export function openModal(createFunction: (closeModal: () => void) => HTMLElemen
   modal.elements.lockscreenPadding!.append(modal.elements.modalWrapper);
 
   // Will be triggered when modal has fully opened (after animations)
-  const modalOpenedPromise: Promise<HTMLElement> = new Promise(async (resolve, reject) => {
-    if (modal.options.preEnterAnimationCallback) { modal.options.preEnterAnimationCallback(modal.elements.modalContent); }
+  // eslint-disable-next-line
+  const modalOpenedPromise: Promise<HTMLElement> = new Promise<HTMLElement>(async (resolve, reject) => {
+    if (modal.options.preEnterAnimationCallback) {
+      modal.options.preEnterAnimationCallback(modal.elements.modalContent);
+    }
     await Promise.all([
       modal.options.lockscreenEnterAnimation!(modal.elements.lockscreen!),
       modal.options.enterAnimation!(modal.elements.modalWrapper)
     ]);
-    if (modal.options.postEnterAnimationCallback) { modal.options.postEnterAnimationCallback(modal.elements.modalContent); }
-    
+    if (modal.options.postEnterAnimationCallback) {
+      modal.options.postEnterAnimationCallback(modal.elements.modalContent);
+    }
+
     modal.isOpened = true;
 
     resolve(modal.elements.modalContent);
@@ -177,16 +190,20 @@ async function closeModalObject(modal: ModalData) {
     modal.closeIsQueued = true;
     return;
   }
-  
+
   modal.isClosing = true;
 
   // Run animations of lockscreen and modal in parallel or sequential
-  if (modal.options.preLeaveAnimationCallback) { modal.options.preLeaveAnimationCallback(modal.elements.modalContent); }
+  if (modal.options.preLeaveAnimationCallback) {
+    modal.options.preLeaveAnimationCallback(modal.elements.modalContent);
+  }
   await Promise.all([
     modal.options.leaveAnimation!(modal.elements.modalWrapper),
     modal.options.lockscreenLeaveAnimation!(modal.elements.lockscreen)
   ]);
-  if (modal.options.postLeaveAnimationCallback) { modal.options.postLeaveAnimationCallback(modal.elements.modalContent); }
+  if (modal.options.postLeaveAnimationCallback) {
+    modal.options.postLeaveAnimationCallback(modal.elements.modalContent);
+  }
 
   // Remove lockscreen
   removeLockscreen(modal);
@@ -230,7 +247,7 @@ async function createLockscreen(modal: ModalData) {
           height: 100%;
           width: 100%;
           box-sizing: border-box;
-          padding: ${ modal.options.styles.scrollPadding }; 
+          padding: ${modal.options.styles.scrollPadding}; 
         '
       ></div>
     </div>`;
@@ -266,12 +283,14 @@ async function createLockscreen(modal: ModalData) {
 
 function repositionLockscreen(modal: ModalData) {
   // y positioning
-  const outerYScrollPosition = modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollY : modal.elements.scrollContainer.scrollTop; 
+  const outerYScrollPosition =
+    modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollY : modal.elements.scrollContainer.scrollTop;
   modal.elements.lockscreen.style.top = outerYScrollPosition + 'px';
   //modal.elements.lockscreen.style.height = window.innerHeight + 'px';
 
   // x positioning
-  const outerXScrollPosition = modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollX : modal.elements.scrollContainer.scrollLeft; 
+  const outerXScrollPosition =
+    modal.elements.container === document.body ? (modal.elements.scrollContainer as any).scrollX : modal.elements.scrollContainer.scrollLeft;
   modal.elements.lockscreen.style.left = outerXScrollPosition + 'px';
   //modal.elements.lockscreen.style.width = window.innerWidth + 'px';
 }
@@ -290,10 +309,18 @@ function initWheelEventVars() {
   wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
   wheelEventOpts = false;
   try {
-    window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
-      get: function () { wheelEventOpts = { passive: false } as EventListenerOptions; } 
-    }));
-  } catch(e) {}   
+    window.addEventListener(
+      'test',
+      null,
+      Object.defineProperty({}, 'passive', {
+        get: function () {
+          wheelEventOpts = { passive: false } as EventListenerOptions;
+        }
+      })
+    );
+  } catch (e) {
+    // empty
+  }
 }
 
 /**
@@ -303,7 +330,7 @@ function initWheelEventVars() {
  */
 function toggleLockscreenListeners(modal: ModalData, state: boolean = false) {
   if (!wheelEvent) {
-      initWheelEventVars();
+    initWheelEventVars();
   }
 
   if (!state) {
@@ -312,14 +339,14 @@ function toggleLockscreenListeners(modal: ModalData, state: boolean = false) {
     modal.elements.lockscreen.addEventListener(wheelEvent, modal.listeners.lockscreenWheel as any, wheelEventOpts);
     modal.elements.lockscreen.addEventListener('touchstart', modal.listeners.lockscreenTouchStart as any);
     modal.elements.lockscreen.addEventListener('touchmove', modal.listeners.lockscreenTouchMove as any);
-    modal.elements.lockscreen.addEventListener('keydown', modal.listeners.lockscreenKey as any, false);  
+    modal.elements.lockscreen.addEventListener('keydown', modal.listeners.lockscreenKey as any, false);
   } else {
     modal.elements.scrollContainer.removeEventListener('scroll', modal.listeners.containerScroll as any);
     modal.elements.scrollContainer.removeEventListener('resize', modal.listeners.containerResize as any);
     modal.elements.lockscreen.removeEventListener(wheelEvent, modal.listeners.lockscreenWheel as any, wheelEventOpts);
     modal.elements.lockscreen.removeEventListener('touchstart', modal.listeners.lockscreenTouchStart as any);
     modal.elements.lockscreen.removeEventListener('touchmove', modal.listeners.lockscreenTouchMove as any);
-    modal.elements.lockscreen.removeEventListener('keydown', modal.listeners.lockscreenKey as any, false);  
+    modal.elements.lockscreen.removeEventListener('keydown', modal.listeners.lockscreenKey as any, false);
   }
 }
 
@@ -333,10 +360,18 @@ function containerResizeListener(modal: ModalData, event) {
 
 function lockscreenWheelListener(modal: ModalData, event) {
   let direction: any;
-  if (event.deltaY < 0) { direction = 'up'; }
-  if (event.deltaY > 0) { direction = 'down'; }
-  if (event.deltaX < 0) { direction = 'left'; }
-  if (event.deltaX > 0) { direction = 'right'; }
+  if (event.deltaY < 0) {
+    direction = 'up';
+  }
+  if (event.deltaY > 0) {
+    direction = 'down';
+  }
+  if (event.deltaX < 0) {
+    direction = 'left';
+  }
+  if (event.deltaX > 0) {
+    direction = 'right';
+  }
 
   if (!canStillScrollWithinLockscreen(event.target, modal, direction)) {
     event.preventDefault();
@@ -344,18 +379,18 @@ function lockscreenWheelListener(modal: ModalData, event) {
 }
 
 function lockscreenTouchStartListener(modal: ModalData, event: TouchEvent) {
-  lastTouchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
+  lastTouchCoords = { x: event.touches[0].clientX, y: event.touches[0].clientY };
   touchScrollAxis = null;
 }
 
-function lockscreenTouchMoveListener (modal: ModalData, event: TouchEvent) {
+function lockscreenTouchMoveListener(modal: ModalData, event: TouchEvent) {
   // Note: Have to track both TouchStart and TouchMove. Just comparing first to second TouchMove to determine scroll direction is
   // insufficient as Chrome doesn't allow blocking touch scrolling ONCE IT HAS STARTED. To fix this, would have to block initial TouchMove event.
   // However, that leads to problems with Firefox as scrolling will be disabled for all subsequent TouchMove events if you block the first one.
   // The way it works for both is to simply take the first coords from TouchStart instead and compare them to the TouchMove coords.
   // As TouchMove only triggers when having moved sufficiently far away from TouchStart coords, coords are guaranteed to be different
-  const touchCoords = {x: event.touches[0].clientX, y: event.touches[0].clientY};
-  const diffCoords = {x: touchCoords.x - lastTouchCoords.x, y: touchCoords.y - lastTouchCoords.y};
+  const touchCoords = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  const diffCoords = { x: touchCoords.x - lastTouchCoords.x, y: touchCoords.y - lastTouchCoords.y };
 
   // Additionally, lock the scroll axis to either x or y on touch scrolling. A touch scroll could otherwise be diagonal
   const axis = Math.abs(diffCoords.y) > Math.abs(diffCoords.x) ? 'y' : 'x';
@@ -369,10 +404,18 @@ function lockscreenTouchMoveListener (modal: ModalData, event: TouchEvent) {
   }
 
   let direction: any;
-  if (touchScrollAxis === 'x' && diffCoords.x >= 0) { direction = 'left'; }
-  if (touchScrollAxis === 'x'  && diffCoords.x < 0) { direction = 'right'; }
-  if (touchScrollAxis === 'y'  && diffCoords.y >= 0) { direction = 'up'; }
-  if (touchScrollAxis === 'y'  && diffCoords.y < 0) { direction = 'down'; }
+  if (touchScrollAxis === 'x' && diffCoords.x >= 0) {
+    direction = 'left';
+  }
+  if (touchScrollAxis === 'x' && diffCoords.x < 0) {
+    direction = 'right';
+  }
+  if (touchScrollAxis === 'y' && diffCoords.y >= 0) {
+    direction = 'up';
+  }
+  if (touchScrollAxis === 'y' && diffCoords.y < 0) {
+    direction = 'down';
+  }
 
   if (!canStillScrollWithinLockscreen(event.target as HTMLElement, modal, direction)) {
     event.preventDefault();
@@ -385,23 +428,23 @@ function lockscreenKeyListener(modal: ModalData, event) {
   if (event.target.classList.contains('comfymodal-lockscreen')) {
     const upKeys = [
       38, // up arrow
-      33  // pageup
+      33 // pageup
     ];
     const downKeys = [
-      40,  // down arrow
-      32,  // spacebar
-      34   // pagedown
+      40, // down arrow
+      32, // spacebar
+      34 // pagedown
     ];
     const leftKeys = [
       37, // Left arrow
-      36  // home
+      36 // home
     ];
     const rightKeys = [
       39, // right arrow
-      35  // end
+      35 // end
     ];
     const allKeys = [...upKeys, ...downKeys, ...leftKeys, ...rightKeys];
-    
+
     // Seems impossible to stop a keydown scroll once it really gets going, so just block any and all keydown scrolling
     if (allKeys.includes(event.keyCode)) {
       event.preventDefault();
@@ -425,14 +468,16 @@ function lockscreenKeyListener(modal: ModalData, event) {
   }
 }
 
-
-
-
 /**
  * By default, if there is nothing (further) to scroll in the modal, browsers will fall back to scrolling the next best thing in the DOM hierarchy, often window
  * To prevent that, have to find out if you can still scroll in any of the elements between (and including) that element and lockscreen. This function does that.
  */
-function canStillScrollWithinLockscreen(element: HTMLElement, modal: ModalData, direction: 'up'|'down'|'left'|'right', safetyDistance: number = 5) {
+function canStillScrollWithinLockscreen(
+  element: HTMLElement,
+  modal: ModalData,
+  direction: 'up' | 'down' | 'left' | 'right',
+  safetyDistance: number = 5
+) {
   // Get all parent elements up to and including lockscreen
   let currentElement = element;
   const elementHierarchy = [];
@@ -452,12 +497,10 @@ function canStillScrollWithinLockscreen(element: HTMLElement, modal: ModalData, 
     const scrollPos = ['up', 'down'].includes(direction) ? element.scrollTop : element.scrollLeft;
     const maxScrollPos = ['up', 'down'].includes(direction) ? element.scrollHeight - element.clientHeight : element.scrollWidth - element.clientWidth;
 
-    const canStillScrollInElement = 
-      maxScrollPos !== 0 &&                                                                     // Element has a scrollbar to begin with
-      (
-        (['up', 'left'].includes(direction) && scrollPos > 0 + safetyDistance) ||               // If scrolling to top/left, can still scroll in to 0
-        (['down', 'right'].includes(direction) && scrollPos < maxScrollPos - safetyDistance)    // If scrolling to down/right, can still scroll to max scroll pos
-      )
+    const canStillScrollInElement =
+      maxScrollPos !== 0 && // Element has a scrollbar to begin with
+      ((['up', 'left'].includes(direction) && scrollPos > 0 + safetyDistance) || // If scrolling to top/left, can still scroll in to 0
+        (['down', 'right'].includes(direction) && scrollPos < maxScrollPos - safetyDistance)); // If scrolling to down/right, can still scroll to max scroll pos
 
     if (canStillScrollInElement) {
       return true;
