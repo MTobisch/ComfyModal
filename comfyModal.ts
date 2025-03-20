@@ -124,7 +124,6 @@ export function openModal(
   modal.elements.lockscreenPadding!.append(modal.elements.modalWrapper);
 
   // Will be triggered when modal has fully opened (after animations)
-  // eslint-disable-next-line
   const modalOpenedPromise: Promise<HTMLElement> = new Promise<HTMLElement>(async (resolve, reject) => {
     if (modal.options.preEnterAnimationCallback) {
       modal.options.preEnterAnimationCallback(modal.elements.modalContent);
